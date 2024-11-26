@@ -1,0 +1,57 @@
+from cvzone.FaceMeshModule import FaceMeshDetector
+import cv2
+
+# Initialize the webcam
+cap = cv2.VideoCapture(1)
+
+# Initialize FaceMeshDetector object
+detector = FaceMeshDetector(staticMode=False, maxFaces=1, minDetectionCon=0.5, minTrackCon=0.5)
+
+# Start the loop to continually get frames from the webcam
+while True:
+    # Read the current frame from the webcam
+    success, img = cap.read()
+
+    # Find face mesh in the image
+    img, faces = detector.findFaceMesh(img, draw=True)
+
+    # Check if any faces are detected
+    if faces:
+        # Get the first detected face
+        face = faces[0]
+
+        # Get specific points for reference
+        nose_point = face[1]  # Nose tip
+        left_cheek_point = face[234]  # Left cheek
+        right_cheek_point = face[454]  # Right cheek
+        forehead_point = face[10]  # Forehead
+        chin_point = face[152]  # Chin
+
+        # Calculate distances for left-right and up-down detection
+        nose_to_left_distance, _ = detector.findDistance(nose_point, left_cheek_point)
+        nose_to_right_distance, _ = detector.findDistance(nose_point, right_cheek_point)
+        nose_to_forehead_distance, _ = detector.findDistance(nose_point, forehead_point)
+        nose_to_chin_distance, _ = detector.findDistance(nose_point, chin_point)
+
+        # Determine head turn direction based on distances
+        if nose_to_left_distance > nose_to_right_distance + 20:  # Threshold for turning right
+            print("Person turned right")
+        elif nose_to_right_distance > nose_to_left_distance + 20:  # Threshold for turning left
+            print("Person turned left")
+        elif nose_to_forehead_distance > nose_to_chin_distance + 17:  # Threshold for looking down
+            print("Person is looking down")
+        elif nose_to_chin_distance > nose_to_forehead_distance + 20:  # Threshold for looking up
+            print("Person is looking up")
+        else:
+            print("Person is facing forward")
+
+    # Display the image in a window named 'Image'
+    cv2.imshow("Image", img)
+
+    # Wait for 1 millisecond to check for any user input, keeping the window open
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+# Release the webcam and close the window
+cap.release()
+cv2.destroyAllWindows()
